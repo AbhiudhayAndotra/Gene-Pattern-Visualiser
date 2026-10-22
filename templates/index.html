@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenePatternX Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand-block">
+                <p class="eyebrow">Bioinformatics Dashboard</p>
+                <h1>GenePatternX</h1>
+                <p class="brand-copy">Intra-cluster distance optimized gene expression pattern visualization system.</p>
+            </div>
+
+            <nav class="nav-list">
+                <button class="nav-link active" data-tab="upload">Upload</button>
+                <button class="nav-link" data-tab="pca">PCA</button>
+                <button class="nav-link" data-tab="clusters">Clusters</button>
+                <button class="nav-link" data-tab="distribution">Distribution</button>
+                <button class="nav-link" data-tab="heatmap">Heatmap</button>
+                <button class="nav-link" data-tab="report">Report</button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p id="statusText">Ready to analyze an uploaded CSV or generate a synthetic dataset.</p>
+            </div>
+        </aside>
+
+        <main class="main-panel">
+            <section class="hero">
+                <div>
+                    <h2>Gene expression exploration with ICD-based clustering</h2>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-chip">
+                        <span>Rows</span>
+                        <strong id="rowsValue">-</strong>
+                    </div>
+                    <div class="hero-chip">
+                        <span>Columns</span>
+                        <strong id="columnsValue">-</strong>
+                    </div>
+                    <div class="hero-chip">
+                        <span>Total ICD</span>
+                        <strong id="icdValue">-</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section id="upload" class="tab-panel active">
+                <div class="panel-grid upload-grid">
+                    <article class="card upload-card">
+                        <h3>Dataset Input</h3>
+                        <p>Upload a gene expression CSV, or leave the field empty to use a synthetic 480 x 96 dataset with separable clusters.</p>
+                        <div class="upload-actions">
+                            <input type="file" id="fileInput" accept=".csv">
+                            <button id="analyzeBtn">Run Analysis</button>
+                            <button id="reportBtn" class="secondary">Download PDF</button>
+                        </div>
+                        <p class="helper-text" id="uploadMode">Current mode: waiting for input.</p>
+                    </article>
+
+                    <article class="card">
+                        <h3>Dataset Summary</h3>
+                        <div class="summary-grid">
+                            <div>
+                                <span class="metric-label">Source</span>
+                                <strong id="sourceValue">-</strong>
+                            </div>
+                            <div>
+                                <span class="metric-label">PCA Variance</span>
+                                <strong id="varianceValue">-</strong>
+                            </div>
+                            <div>
+                                <span class="metric-label">Iterations</span>
+                                <strong id="iterationsValue">-</strong>
+                            </div>
+                            <div>
+                                <span class="metric-label">Converged</span>
+                                <strong id="convergedValue">-</strong>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section id="pca" class="tab-panel">
+                <div class="panel-grid compare-grid">
+                    <article class="card chart-card">
+                        <div class="card-head">
+                            <h3>PCA Scatter Plot: KMeans</h3>
+                            <p>Baseline clustering projected in PCA space.</p>
+                        </div>
+                        <canvas id="kmeansScatterChart"></canvas>
+                    </article>
+                    <article class="card chart-card">
+                        <div class="card-head">
+                            <h3>PCA Scatter Plot: ICD</h3>
+                            <p>Optimized clustering projected in the same PCA space.</p>
+                        </div>
+                        <canvas id="icdScatterChart"></canvas>
+                    </article>
+                    <article class="card plotly-card pca-3d-card">
+                        <div class="card-head">
+                            <h3>PCA 3D Scatter</h3>
+                            <p>Three-component PCA view for depth and cluster separation.</p>
+                        </div>
+                        <div id="pca3dPlot" class="plotly-panel"></div>
+                    </article>
+                </div>
+            </section>
+
+            <section id="clusters" class="tab-panel">
+                <div class="panel-grid cluster-grid">
+                    <article class="card rectangular-guide-card cluster-guide-top">
+                        <div class="card-head">
+                            <h3>KMeans vs ICD</h3>
+                            <p>Simple usage guide for reading both clustering methods.</p>
+                        </div>
+                        <div class="rectangular-guide-grid">
+                            <div class="method-pill">
+                                <strong>KMeans</strong>
+                                <p>Fast baseline for first-pass clustering checks.</p>
+                            </div>
+                            <div class="method-pill">
+                                <strong>ICD</strong>
+                                <p>Compactness-focused method for tighter clusters.</p>
+                            </div>
+                            <div class="method-pill">
+                                <strong>How To Use</strong>
+                                <p>Read KMeans first, then compare ICD compactness.</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card chart-card">
+                        <div class="card-head">
+                            <h3>Cluster Size: KMeans</h3>
+                            <p>Sample count per baseline cluster.</p>
+                        </div>
+                        <canvas id="kmeansClusterChart"></canvas>
+                    </article>
+
+                    <article class="card metrics-card">
+                        <div class="card-head">
+                            <h3>KMeans Summary</h3>
+                            <p>Iteration count, inertia, and centroid preview.</p>
+                        </div>
+                        <div id="kmeansMetrics" class="metrics-list"></div>
+                    </article>
+
+                    <article class="card chart-card">
+                        <div class="card-head">
+                            <h3>Elbow Method</h3>
+                            <p>KMeans inertia across candidate cluster counts.</p>
+                        </div>
+                        <canvas id="elbowChart"></canvas>
+                    </article>
+
+                    <article class="card chart-card">
+                        <div class="card-head">
+                            <h3>UMAP Cluster Map</h3>
+                            <p>Nonlinear manifold projection for cluster separation insight.</p>
+                        </div>
+                        <canvas id="umapScatterChart"></canvas>
+                    </article>
+
+                    <div class="cluster-left-stack">
+                        <article class="card chart-card icd-cluster-card">
+                            <div class="card-head">
+                                <h3>Cluster Size: ICD</h3>
+                                <p>Sample count per optimized cluster.</p>
+                            </div>
+                            <canvas id="icdClusterChart"></canvas>
+                        </article>
+                    </div>
+                    
+                    <article class="card metrics-card scroll-metrics-card">
+                        <div class="card-head">
+                            <h3>ICD Metrics</h3>
+                            <p>Average pairwise distance inside each cluster.</p>
+                        </div>
+                        <div id="icdMetrics" class="metrics-list"></div>
+                    </article>
+
+                    <article class="card centroid-card">
+                        <div class="card-head">
+                            <h3>Centroid Summary</h3>
+                            <p>Compare centroid coordinates for KMeans and ICD.</p>
+                        </div>
+                        <div class="dual-centroids">
+                            <div>
+                                <h4>KMeans</h4>
+                                <div id="kmeansCentroidSummary" class="centroid-list"></div>
+                            </div>
+                            <div>
+                                <h4>ICD</h4>
+                                <div id="icdCentroidSummary" class="centroid-list"></div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section id="heatmap" class="tab-panel">
+                <div class="panel-grid">
+                    <article class="card chart-card">
+                        <div class="card-head">
+                            <h3>Correlation Heatmap</h3>
+                            <p>Real feature-to-feature correlation matrix rendered on canvas.</p>
+                        </div>
+                        <canvas id="heatmapCanvas" width="900" height="700"></canvas>
+                    </article>
+                </div>
+            </section>
+
+            <section id="distribution" class="tab-panel">
+                <div class="panel-grid distribution-grid">
+                    <article class="card distribution-summary-card">
+                        <div class="card-head">
+                            <h3>Expression Summary</h3>
+                            <p>Overall gene expression distribution across the active dataset.</p>
+                        </div>
+                        <div id="distributionSummary" class="summary-grid distribution-summary"></div>
+                    </article>
+
+                    <article class="card chart-card">
+                        <div class="card-head">
+                            <h3>Expression Histogram</h3>
+                            <p>Frequency of expression values across all genes and samples.</p>
+                        </div>
+                        <canvas id="distributionHistogramChart"></canvas>
+                    </article>
+
+                    <article class="card chart-card">
+                        <div class="card-head">
+                            <h3>Top Variable Genes</h3>
+                            <p>Genes with the highest variance across the dataset.</p>
+                        </div>
+                        <canvas id="varianceChart"></canvas>
+                    </article>
+
+                    <article class="card distribution-cluster-summary-card">
+                        <div class="card-head">
+                            <h3>Cluster Distribution Summary</h3>
+                            <p>Mean, spread, and range of expression values inside each clustering result.</p>
+                        </div>
+                        <div class="dual-centroids">
+                            <div>
+                                <h4>KMeans</h4>
+                                <div id="kmeansDistributionSummary" class="centroid-list"></div>
+                            </div>
+                            <div>
+                                <h4>ICD</h4>
+                                <div id="icdDistributionSummary" class="centroid-list"></div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section id="report" class="tab-panel">
+                <div class="panel-grid report-grid">
+                    <article class="card">
+                        <h3>Report Package</h3>
+                        <p>The PDF report includes dataset summary, PCA scatter, heatmap, cluster distribution, and ICD metrics.</p>
+                        <button id="reportTabBtn">Download GenePatternX Report</button>
+                    </article>
+                    <article class="card">
+                        <h3>Analysis Notes</h3>
+                        <div id="reportSummary" class="report-summary">
+                            Run an analysis to populate this summary.
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
